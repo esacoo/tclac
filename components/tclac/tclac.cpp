@@ -544,8 +544,8 @@ void tclacClimate::takeControl() {
 	dataTX[14] = 0x00;	//0,0,halfdegree,0,0,0,0,0
 	dataTX[15] = 0x00;	//??
 	dataTX[16] = 0x00;	//??
-	dataTX[17] = 0x00;	//??
-	dataTX[18] = 0x00;	//??
+	//dataTX[17] = 0x00;	//??
+	//dataTX[18] = 0x00;	//??
 	//dataTX[19] = 0x00;	//sleep on = 1 off=0
 	dataTX[20] = 0x00;	//??
 	dataTX[21] = 0x00;	//??
