@@ -108,7 +108,7 @@ void tclacClimate::readData() {
 	current_temperature = float((( (dataRX[17] << 8) | dataRX[18] ) / 374 - 32)/1.8);
 	target_temperature = (dataRX[FAN_SPEED_POS] & SET_TEMP_MASK) + 16;
 
-	//ESP_LOGD("TCL", "TEMP: %f ", current_temperature);
+	ESP_LOGD("TCL", "readData - Empfangener Modus-Byte: 0x%02X", dataRX[MODE_POS]);
 
 	if (dataRX[MODE_POS] & ( 1 << 4)) {
 		// Wenn die Klimaanlage eingeschaltet ist, analysieren wir die Daten zur Anzeige
@@ -214,29 +214,29 @@ void tclacClimate::control(const ClimateCall &call) {
 		ESP_LOGD("TCL", "Get MODE from AC");
 	}
 	
-	// Запрашиваем данные из переключателя предустановок кондиционера
+	// Daten vom Preset-Schalter der Klimaanlage abrufen
 	if (call.get_preset().has_value()){
 		switch_preset = call.get_preset().value();
 	} else {
 		switch_preset = preset.value();
 	}
 	
-	// Запрашиваем данные из переключателя режимов вентилятора
+	// Daten vom Lüftermodus-Schalter abrufen
 	if (call.get_fan_mode().has_value()){
 		switch_fan_mode = call.get_fan_mode().value();
 	} else {
 		switch_fan_mode = fan_mode.value();
 	}
 	
-	// Запрашиваем данные из переключателя режимов качания заслонок
+	// Daten vom Lamellenschwingmodus-Schalter abrufen
 	if (call.get_swing_mode().has_value()){
 		switch_swing_mode = call.get_swing_mode().value();
 	} else {
-		// А если в переключателе пусто- заполняем значением из последнего опроса состояния. Типа, ничего не поменялось.
+		// Wenn der Schalter leer ist, füllen wir ihn mit dem Wert der letzten Statusabfrage. Quasi, es hat sich nichts geändert.
 		switch_swing_mode = swing_mode;
 	}
 	
-	// Расчет температуры
+	// Temperaturberechnung
 	if (call.get_target_temperature().has_value()) {
 		target_temperature_set = 31-(int)call.get_target_temperature().value();
 	} else {
@@ -315,7 +315,8 @@ void tclacClimate::takeControl() {
 			break;
 		case climate::CLIMATE_MODE_HEAT:
 			dataTX[7] += 0b00000100;
-			dataTX[8] += 0b00000001;	
+			dataTX[8] += 0b00000001;
+			ESP_LOGD("TCL", "Setze HEAT-Modus: dataTX[7]=0x%02X, dataTX[8]=0x%02X", dataTX[7], dataTX[8]);
 			break;
 	}
 
@@ -515,13 +516,22 @@ void tclacClimate::takeControl() {
 
 	// Temperatur einstellen
 	dataTX[9] = target_temperature_set;
+	
+	// EXPERIMENT: Externe Temperatur in Bytes 17-18 einfügen
+	// Test mit 22°C als externe Temperatur
+	float external_temp = 22.0;  // Testtemperatur in Celsius
+	int16_t temp_raw = (int16_t)(((external_temp * 1.8) + 32) * 374);
+	dataTX[17] = (temp_raw >> 8) & 0xFF;  // High Byte
+	dataTX[18] = temp_raw & 0xFF;          // Low Byte
+	ESP_LOGD("TCL", "EXPERIMENT: Externe Temp %.1f°C -> raw 0x%04X (Bytes: 0x%02X 0x%02X)", 
+		external_temp, temp_raw, dataTX[17], dataTX[18]);
 		
 	// Byte-Array zum Senden an die Klimaanlage zusammenstellen
 	dataTX[0] = 0xBB;	//Start-Byte des Headers
-	dataTX[1] = 0x00;	//стартовый байт заголовка
-	dataTX[2] = 0x01;	//стартовый байт заголовка
-	dataTX[3] = 0x03;	//0x03 - управление, 0x04 - опрос
-	dataTX[4] = 0x20;	//0x20 - управление, 0x19 - опрос
+	dataTX[1] = 0x00;	//Start-Byte des Headers
+	dataTX[2] = 0x01;	//Start-Byte des Headers
+	dataTX[3] = 0x03;	//0x03 - Steuerung, 0x04 - Abfrage
+	dataTX[4] = 0x20;	//0x20 - Steuerung, 0x19 - Abfrage
 	dataTX[5] = 0x03;	//??
 	dataTX[6] = 0x01;	//??
 	//dataTX[7] = 0x64;	//eco,display,beep,ontimerenable, offtimerenable,power,0,0
