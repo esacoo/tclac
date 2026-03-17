@@ -592,7 +592,7 @@ std::string tclacClimate::getHex(byte *message, byte size) {
 }
 
 // Prüfsumme berechnen
-byte tclacClimate::getChecksum(const byte * message, size_t size) {
+std::byte tclacClimate::getChecksum(const byte * message, size_t size) {
 	byte position = size - 1;
 	byte crc = 0;
 	for (int i = 0; i < position; i++)
