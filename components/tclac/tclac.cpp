@@ -117,6 +117,13 @@ void tclacClimate::loop()  {
 void tclacClimate::update() {
 	tclacClimate::dataShow(1,1);
 	this->esphome::uart::UARTDevice::write_array(poll, sizeof(poll));
+	// Warten, bis die Echo-Bytes im UART-Puffer angekommen sind, dann verwerfen
+	this->flush();
+	delay(10);
+	// Alle Echo-Bytes aus dem Empfangspuffer entfernen
+	while (esphome::uart::UARTDevice::available() > 0) {
+		esphome::uart::UARTDevice::read();
+	}
 	//auto raw = tclacClimate::getHex(poll, sizeof(poll));
 	//ESP_LOGD("TCL", "chek status sended");
 	tclacClimate::dataShow(1,0);
