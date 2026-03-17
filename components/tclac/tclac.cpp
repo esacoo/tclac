@@ -519,12 +519,12 @@ void tclacClimate::takeControl() {
 	
 	// EXPERIMENT: Externe Temperatur in Bytes 17-18 einfügen
 	// Test mit 22°C als externe Temperatur
-	float external_temp = 22.0;  // Testtemperatur in Celsius
+	/*float external_temp = 22.0;  // Testtemperatur in Celsius
 	int16_t temp_raw = (int16_t)(((external_temp * 1.8) + 32) * 374);
 	dataTX[17] = (temp_raw >> 8) & 0xFF;  // High Byte
 	dataTX[18] = temp_raw & 0xFF;          // Low Byte
 	ESP_LOGD("TCL", "EXPERIMENT: Externe Temp %.1f°C -> raw 0x%04X (Bytes: 0x%02X 0x%02X)", 
-		external_temp, temp_raw, dataTX[17], dataTX[18]);
+		external_temp, temp_raw, dataTX[17], dataTX[18]);*/
 		
 	// Byte-Array zum Senden an die Klimaanlage zusammenstellen
 	dataTX[0] = 0xBB;	//Start-Byte des Headers
