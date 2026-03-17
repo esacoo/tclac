@@ -73,17 +73,29 @@ void tclacClimate::loop()  {
 		//ESP_LOGD("TCL", "first 5 byte : %s ", raw.c_str());
 
 		// Aus den ersten 5 Bytes benötigen wir das fünfte - es enthält die Länge der Nachricht
-		esphome::uart::UARTDevice::read_array(dataRX+5, dataRX[4]+1);
+		size_t remaining = (size_t)dataRX[4] + 1;  // payload + checksum byte
+		if (5 + remaining > sizeof(dataRX)) {
+			ESP_LOGW("TCL", "Frame too large: length byte=%d", dataRX[4]);
+			dataShow(0, 0);
+			return;
+		}
 
-		uint8_t check = getChecksum(dataRX, sizeof(dataRX));
+		if (!esphome::uart::UARTDevice::read_array(dataRX + 5, remaining)) {
+			ESP_LOGW("TCL", "Timeout reading %d bytes from UART", remaining);
+			dataShow(0, 0);
+			return;
+		}
+
+		size_t msg_len = 5 + remaining;  // total frame length including checksum
+		uint8_t check = getChecksum(dataRX, msg_len);
 
 		//raw = getHex(dataRX, sizeof(dataRX));
 		
 		//ESP_LOGD("TCL", "RX full : %s ", raw.c_str());
 		
 		// Prüfen der Prüfsumme
-		if (check != dataRX[60]) {
-			ESP_LOGD("TCL", "Invalid checksum %x", check);
+		if (check != dataRX[msg_len - 1]) {
+			ESP_LOGD("TCL", "Invalid checksum: calculated=%02x received=%02x (frame len=%d)", check, dataRX[msg_len - 1], msg_len);
 			tclacClimate::dataShow(0,0);
 			return;
 		} else {
