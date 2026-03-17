@@ -54,7 +54,7 @@ void tclacClimate::loop()  {
 		dataRX[0] = esphome::uart::UARTDevice::read();
 		// Wenn das empfangene Byte kein Header (0xBB) ist, verlassen wir einfach die Schleife
 		if (dataRX[0] != 0xBB) {
-			ESP_LOGD("TCL", "Wrong byte");
+			ESP_LOGD("TCL", "Wrong byte: 0x%02X (avail=%d)", dataRX[0], esphome::uart::UARTDevice::available());
 			dataShow(0,0);
 			return;
 		}
@@ -68,9 +68,8 @@ void tclacClimate::loop()  {
 		delay(5);
 		dataRX[4] = esphome::uart::UARTDevice::read();
 
-		//auto raw = getHex(dataRX, 5);
-		
-		//ESP_LOGD("TCL", "first 5 byte : %s ", raw.c_str());
+		ESP_LOGD("TCL", "Header: %02X %02X %02X %02X %02X (cmd=0x%02X len=%d)",
+			dataRX[0], dataRX[1], dataRX[2], dataRX[3], dataRX[4], dataRX[3], dataRX[4]);
 
 		// Aus den ersten 5 Bytes benötigen wir das fünfte - es enthält die Länge der Nachricht
 		size_t remaining = (size_t)dataRX[4] + 1;  // payload + checksum byte
@@ -88,23 +87,29 @@ void tclacClimate::loop()  {
 
 		size_t msg_len = 5 + remaining;  // total frame length including checksum
 		uint8_t check = getChecksum(dataRX, msg_len);
-
-		auto raw = getHex(dataRX, msg_len);
-		ESP_LOGD("TCL", "RX [%d bytes]: %s", msg_len, raw.c_str());
 		
 		// Prüfen der Prüfsumme
 		if (check != dataRX[msg_len - 1]) {
 			ESP_LOGD("TCL", "Invalid checksum: calculated=%02x received=%02x (frame len=%d)", check, dataRX[msg_len - 1], msg_len);
 			tclacClimate::dataShow(0,0);
 			return;
-		} else {
-			//ESP_LOGD("TCL", "checksum OK %x", check);
 		}
 		tclacClimate::dataShow(0,0);
 
 		// Echo-Frames überspringen: Byte 3 ist 0x04 (Poll) oder 0x03 (Steuerung)
 		if (dataRX[3] == 0x04 || dataRX[3] == 0x03) {
-			ESP_LOGD("TCL", "Skipping echo frame (cmd=0x%02X, %d bytes)", dataRX[3], msg_len);
+			ESP_LOGD("TCL", "Skipping echo (cmd=0x%02X, %d bytes), waiting for response...", dataRX[3], msg_len);
+			// Nach dem Echo kurz auf die eigentliche Antwort warten
+			uint32_t wait_start = millis();
+			while (millis() - wait_start < 200) {
+				if (esphome::uart::UARTDevice::available() > 0) {
+					ESP_LOGD("TCL", "Response data arriving after %dms (%d bytes avail)", 
+						(int)(millis() - wait_start), esphome::uart::UARTDevice::available());
+					return;  // Nächster loop()-Aufruf verarbeitet die Antwort
+				}
+				delay(1);
+			}
+			ESP_LOGD("TCL", "No response from AC within 200ms after echo");
 			return;
 		}
 
