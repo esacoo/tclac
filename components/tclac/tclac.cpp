@@ -101,6 +101,14 @@ void tclacClimate::loop()  {
 			//ESP_LOGD("TCL", "checksum OK %x", check);
 		}
 		tclacClimate::dataShow(0,0);
+
+		// Nur die vollständige 61-Byte-Statusantwort verarbeiten.
+		// Kürzere Frames (z. B. 8-Byte-Echo des Poll-Befehls) ignorieren.
+		if (msg_len != sizeof(dataRX)) {
+			ESP_LOGD("TCL", "Skipping non-response frame (%d bytes, expected %d)", msg_len, sizeof(dataRX));
+			return;
+		}
+
 		// Nachdem wir alles aus dem Puffer gelesen haben, fahren wir mit der Datenanalyse fort
 		tclacClimate::readData();
 	}
