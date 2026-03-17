@@ -89,9 +89,8 @@ void tclacClimate::loop()  {
 		size_t msg_len = 5 + remaining;  // total frame length including checksum
 		uint8_t check = getChecksum(dataRX, msg_len);
 
-		//raw = getHex(dataRX, sizeof(dataRX));
-		
-		//ESP_LOGD("TCL", "RX full : %s ", raw.c_str());
+		auto raw = getHex(dataRX, msg_len);
+		ESP_LOGD("TCL", "RX [%d bytes]: %s", msg_len, raw.c_str());
 		
 		// Prüfen der Prüfsumme
 		if (check != dataRX[msg_len - 1]) {
