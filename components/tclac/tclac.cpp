@@ -102,14 +102,14 @@ void tclacClimate::loop()  {
 		}
 		tclacClimate::dataShow(0,0);
 
-		// Nur die vollständige 61-Byte-Statusantwort verarbeiten.
-		// Kürzere Frames (z. B. 8-Byte-Echo des Poll-Befehls) ignorieren.
-		if (msg_len != sizeof(dataRX)) {
-			ESP_LOGD("TCL", "Skipping non-response frame (%d bytes, expected %d)", msg_len, sizeof(dataRX));
+		// Echo-Frames überspringen: Byte 3 ist 0x04 (Poll) oder 0x03 (Steuerung)
+		if (dataRX[3] == 0x04 || dataRX[3] == 0x03) {
+			ESP_LOGD("TCL", "Skipping echo frame (cmd=0x%02X, %d bytes)", dataRX[3], msg_len);
 			return;
 		}
 
 		// Nachdem wir alles aus dem Puffer gelesen haben, fahren wir mit der Datenanalyse fort
+		ESP_LOGD("TCL", "Processing response frame (cmd=0x%02X, %d bytes)", dataRX[3], msg_len);
 		tclacClimate::readData();
 	}
 }
@@ -117,13 +117,6 @@ void tclacClimate::loop()  {
 void tclacClimate::update() {
 	tclacClimate::dataShow(1,1);
 	this->esphome::uart::UARTDevice::write_array(poll, sizeof(poll));
-	// Warten, bis die Echo-Bytes im UART-Puffer angekommen sind, dann verwerfen
-	this->flush();
-	delay(10);
-	// Alle Echo-Bytes aus dem Empfangspuffer entfernen
-	while (esphome::uart::UARTDevice::available() > 0) {
-		esphome::uart::UARTDevice::read();
-	}
 	//auto raw = tclacClimate::getHex(poll, sizeof(poll));
 	//ESP_LOGD("TCL", "chek status sended");
 	tclacClimate::dataShow(1,0);
