@@ -602,10 +602,10 @@ void tclacClimate::takeControl() {
 	//dataTX[10] = 0x00;	//0,timerindicator,swingv(3),fan(3) fan+swing modes //0=auto 1=low 2=med 3=high
 	//dataTX[11] = 0x00;	//0,offtimer(6),0
 	dataTX[12] = 0x00;	//fahrenheit,ontimer(6),0 cf 80=f 0=c
-	dataTX[13] = 0x01;	//??
-	dataTX[14] = 0x00;	//0,0,halfdegree,0,0,0,0,0
-	dataTX[15] = 0x00;	//??
-	dataTX[16] = 0x00;	//??
+	dataTX[13] = 0x49;	//??
+	dataTX[14] = 0x0C;	//0,0,halfdegree,0,0,0,0,0
+	dataTX[15] = 0x49;	//??
+	dataTX[16] = 0x0C;	//??
 	// EXPERIMENT: constant 10 °C injected into TX bytes 17-18
 	// 10 °C -> (10*1.8+32)*374 = 18700 = 0x490C
 	dataTX[17] = 0x49;
