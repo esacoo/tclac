@@ -1,11 +1,12 @@
 ﻿from esphome import automation, pins
 import esphome.codegen as cg
 import esphome.config_validation as cv
-from esphome.components import climate, uart
+from esphome.components import climate, uart, sensor
 from esphome.const import (
     CONF_ID,
     CONF_LEVEL,
     CONF_BEEPER,
+    CONF_SENSOR,
     CONF_VISUAL,
     CONF_MAX_TEMPERATURE,
     CONF_MIN_TEMPERATURE,
@@ -24,7 +25,7 @@ from esphome.components.climate import (
     CONF_CURRENT_TEMPERATURE,
 )
 
-AUTO_LOAD = ["climate"]
+AUTO_LOAD = ["climate", "sensor"]
 CODEOWNERS = ["@I-am-nightingale", "@xaxexa", "@junkfix"]
 DEPENDENCIES = ["climate", "uart"]
 
@@ -162,6 +163,7 @@ CONFIG_SCHEMA = cv.All(
             cv.Optional(CONF_SUPPORTED_SWING_MODES,default=["OFF","VERTICAL","HORIZONTAL","BOTH",],): cv.ensure_list(cv.enum(SUPPORTED_SWING_MODES_OPTIONS, upper=True)),
             cv.Optional(CONF_SUPPORTED_MODES,default=["OFF","AUTO","COOL","HEAT","DRY","FAN_ONLY",],): cv.ensure_list(cv.enum(SUPPORTED_CLIMATE_MODES_OPTIONS, upper=True)),
             cv.Optional(CONF_SUPPORTED_FAN_MODES,default=["AUTO","QUIET","LOW","MIDDLE","MEDIUM","HIGH","FOCUS","DIFFUSE",],): cv.ensure_list(cv.enum(SUPPORTED_FAN_MODES_OPTIONS, upper=True)),
+            cv.Optional(CONF_SENSOR): cv.use_id(sensor.Sensor),
         }
     )
     .extend(uart.UART_DEVICE_SCHEMA)
@@ -339,6 +341,9 @@ def to_code(config):
         cg.add(var.set_supported_fan_modes(config[CONF_SUPPORTED_FAN_MODES]))
     if CONF_SUPPORTED_SWING_MODES in config:
         cg.add(var.set_supported_swing_modes(config[CONF_SUPPORTED_SWING_MODES]))
+    if CONF_SENSOR in config:
+        sens = yield cg.get_variable(config[CONF_SENSOR])
+        cg.add(var.set_external_temp_sensor(sens))
 
     if CONF_TX_LED in config:
         cg.add_define("CONF_TX_LED")

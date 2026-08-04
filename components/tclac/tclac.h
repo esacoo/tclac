@@ -12,6 +12,7 @@
 #include "esphome/core/defines.h"
 #include "esphome/components/uart/uart.h"
 #include "esphome/components/climate/climate.h"
+#include "esphome/components/sensor/sensor.h"
 
 namespace esphome {
 namespace tclac {
@@ -124,6 +125,7 @@ class tclacClimate : public climate::Climate, public esphome::uart::UARTDevice, 
 		bool beeper_status_;
 		bool display_status_;
 		bool force_mode_status_;
+		sensor::Sensor *external_temp_sensor_{nullptr};
 		uint8_t switch_preset = 0;
 		bool module_display_status_;
 		uint8_t switch_fan_mode = 0;
@@ -159,6 +161,7 @@ class tclacClimate : public climate::Climate, public esphome::uart::UARTDevice, 
 		// Фактическое состояние дисплея кондиционера (синхронизируется из
 		// статусных кадров в readData)
 		bool get_display_state() { return this->display_status_; }
+		void set_external_temp_sensor(sensor::Sensor *s) { this->external_temp_sensor_ = s; }
 		void dataShow(bool flow, bool shine);
 		void set_force_mode_state(bool f_state);
 		void set_rx_led_pin(GPIOPin *rx_led_pin);

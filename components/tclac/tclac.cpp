@@ -171,6 +171,11 @@ void tclacClimate::readData() {
 	
 	// Эту конструкцию предложила нейронка Claude, я вообще не понимаю таких изысков, так что вставляю как есть.
 	current_temperature = ((float)((dataRX[17] << 8) | dataRX[18]) / 374.0f - 32.0f) / 1.8f;
+	// Если подключён внешний датчик температуры и его значение доступно, используем его
+	if (this->external_temp_sensor_ != nullptr && !isnan(this->external_temp_sensor_->state)) {
+		current_temperature = this->external_temp_sensor_->state;
+		ESP_LOGD("TCL", "Current temp from external sensor: %.1f", current_temperature);
+	}
 	
 	target_temperature = (dataRX[FAN_SPEED_POS] & SET_TEMP_MASK) + 16;
 
@@ -601,8 +606,23 @@ void tclacClimate::takeControl() {
 	dataTX[14] = 0x00;	//0,0,halfdegree,0,0,0,0,0
 	dataTX[15] = 0x00;	//??
 	dataTX[16] = 0x00;	//??
-	dataTX[17] = 0x00;	//??
-	dataTX[18] = 0x00;	//??
+	// EXPERIMENT: constant 10 °C injected into TX bytes 17-18
+	// 10 °C -> (10*1.8+32)*374 = 18700 = 0x490C
+	dataTX[17] = 0x49;
+	dataTX[18] = 0x0C;
+	ESP_LOGD("TCL", "EXPERIMENT: constant 10C injected -> dataTX[17]=0x49 dataTX[18]=0x0C");
+	// --- normal external-sensor path (disabled during experiment) ---
+	// if (this->external_temp_sensor_ != nullptr && !isnan(this->external_temp_sensor_->state)) {
+	//     float ext_temp = this->external_temp_sensor_->state;
+	//     uint16_t encoded = (uint16_t)((ext_temp * 1.8f + 32.0f) * 374.0f);
+	//     dataTX[17] = (encoded >> 8) & 0xFF;
+	//     dataTX[18] = encoded & 0xFF;
+	//     if ((ext_temp - (int)ext_temp) >= 0.5f) dataTX[14] |= 0b00100000;
+	//     ESP_LOGD("TCL", "External temp encoded into TX: %.1f C -> 0x%02X%02X", ext_temp, dataTX[17], dataTX[18]);
+	// } else {
+	//     dataTX[17] = 0x00;
+	//     dataTX[18] = 0x00;
+	// }
 	//dataTX[19] = 0x00;	//sleep on = 1 off=0
 	dataTX[20] = 0x00;	//??
 	dataTX[21] = 0x00;	//??
